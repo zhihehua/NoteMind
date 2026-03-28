@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- 标题 -->
+        <EditText
+            android:id="@+id/et_question"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="标题"
+            android:minLines="3"
+            android:background="@drawable/edittext_bg"
+            android:padding="12dp"
+            android:layout_marginBottom="12dp"/>
+
+        <!-- AI解答 -->
+        <EditText
+            android:id="@+id/et_answer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="AI解答"
+            android:minLines="5"
+            android:background="@drawable/edittext_bg"
+            android:padding="12dp"
+            android:layout_marginBottom="12dp"/>
+
+        <!-- 标签 -->
+        <EditText
+            android:id="@+id/et_tag"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="标签（如：高数/食谱/旅游）"
+            android:background="@drawable/edittext_bg"
+            android:padding="12dp"
+            android:layout_marginBottom="12dp"/>
+
+        <!-- 分类 -->
+        <EditText
+            android:id="@+id/et_category"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="分类（如：方程/早餐/攻略）"
+            android:background="@drawable/edittext_bg"
+            android:padding="12dp"
+            android:layout_marginBottom="12dp"/>
+
+        <!-- 用户笔记（文本） -->
+        <EditText
+            android:id="@+id/et_user_note"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="用户笔记（可输入文本，拍照/相册会自动追加记录）"
+            android:minLines="3"
+            android:background="@drawable/edittext_bg"
+            android:padding="12dp"
+            android:layout_marginBottom="12dp"/>
+
+        <!-- 拍照 + 相册 按钮横向排列 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="12dp">
+
+            <!-- 原有：拍照添加笔记 -->
+            <Button
+                android:id="@+id/btn_photo_note"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="拍照添加笔记"
+                android:background="@drawable/btn_bg"
+                android:layout_marginRight="4dp"/>
+
+            <!-- 新增：相册添加笔记（完全一样的逻辑） -->
+            <Button
+                android:id="@+id/btn_gallery_note"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="相册添加笔记"
+                android:background="@drawable/btn_bg"
+                android:layout_marginLeft="4dp"/>
+
+        </LinearLayout>
+
+        <!-- 照片展示区域 -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="已添加的照片："
+            android:textSize="16sp"
+            android:textColor="#333333"
+            android:layout_marginBottom="8dp"/>
+
+        <GridLayout
+            android:id="@+id/gl_photos"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- 操作按钮 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <Button
+                android:id="@+id/btn_update"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="保存修改"
+                android:background="@drawable/btn_bg"
+                android:layout_marginRight="8dp"/>
+
+            <Button
+                android:id="@+id/btn_delete"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="删除"
+                android:background="@drawable/btn_bg"/>
+
+        </LinearLayout>
+
+    </LinearLayout>
+</ScrollView>
