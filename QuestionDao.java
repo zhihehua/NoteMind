@@ -41,15 +41,14 @@ public class QuestionDao {
         return list;
     }
 
-    // 【新增】获取所有不重复的标签（用于弹窗筛选）
+    // 【新增】获取所有不重复的标签（用于首页 Chip 展示）
     public List<String> getAllUniqueTags() {
         List<String> tags = new ArrayList<>();
-        Cursor cursor = db.rawQuery("SELECT DISTINCT " + DbHelper.TAG + " FROM " + DbHelper.TABLE_NAME, null);
+        // 增加 DISTINCT 和非空过滤
+        Cursor cursor = db.rawQuery("SELECT DISTINCT " + DbHelper.TAG + " FROM " + DbHelper.TABLE_NAME + " WHERE " + DbHelper.TAG + " IS NOT NULL AND " + DbHelper.TAG + " != ''", null);
         while (cursor.moveToNext()) {
             @SuppressLint("Range") String tag = cursor.getString(cursor.getColumnIndex(DbHelper.TAG));
-            if (tag != null && !tag.isEmpty()) {
-                tags.add(tag);
-            }
+            tags.add(tag);
         }
         cursor.close();
         return tags;

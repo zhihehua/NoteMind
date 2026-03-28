@@ -1,32 +1,60 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#F8F9FA"
-    android:gravity="center"
+    android:gravity="center_horizontal"
     android:orientation="vertical"
     android:padding="30dp">
 
-    <!-- 主标题 -->
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
         android:layout_marginBottom="5dp"
         android:gravity="center"
         android:text="NoteMind-智记"
         android:textSize="26sp"
         android:textStyle="bold" />
 
-    <!-- 标语：在标题右下方 -->
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="40dp"
+        android:layout_marginBottom="30dp"
         android:gravity="center"
         android:text="智记 - 更懂你的知己"
         android:textColor="#6C757D"
         android:textSize="14sp" />
 
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="start"
+        android:layout_marginStart="5dp"
+        android:layout_marginBottom="8dp"
+        android:text="选择当前场景（选定后提问更精准）："
+        android:textColor="#495057"
+        android:textSize="12sp"
+        android:textStyle="bold" />
+
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="25dp"
+        android:overScrollMode="never"
+        android:scrollbars="none">
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chip_group_tags"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:selectionRequired="false"
+            app:singleLine="true"
+            app:singleSelection="true">
+
+        </com.google.android.material.chip.ChipGroup>
+    </HorizontalScrollView>
     <Button
         android:id="@+id/btn_take_photo"
         android:layout_width="match_parent"
@@ -49,26 +77,27 @@
         android:id="@+id/btn_input_text"
         android:layout_width="match_parent"
         android:layout_height="60dp"
+        android:layout_marginBottom="16dp"
         android:background="@drawable/btn_dark_gradient"
         android:text="文本识别"
+        android:textSize="18sp" />
+
+    <Button
+        android:id="@+id/btn_knowledge_atom"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:layout_marginBottom="16dp"
+        android:background="@drawable/btn_dark_gradient"
+        android:text="原子智图"
         android:textSize="18sp" />
 
     <Button
         android:id="@+id/btn_show_list"
         android:layout_width="match_parent"
         android:layout_height="60dp"
-        android:layout_marginTop="40dp"
+        android:layout_marginTop="20dp"
         android:background="@drawable/btn_clean"
         android:text="让朕看看!"
-        android:textSize="18sp" />
-
-    <Button
-        android:id="@+id/btn_knowledge_atom"
-        android:layout_width="328dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:background="@drawable/btn_dark_gradient"
-        android:text="原子智图"
         android:textSize="18sp" />
 
 </LinearLayout>

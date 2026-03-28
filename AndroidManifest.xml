@@ -38,12 +38,12 @@
         <activity android:name="com.example.NoteMind.DetailActivity" />
         <activity android:name="com.example.NoteMind.NoteListTwoActivity" />
         <activity android:name="com.example.NoteMind.ImagePreviewActivity" />
-        <activity android:name=".AtomGraphActivity" />
+        <activity android:name="com.example.NoteMind.AtomGraphActivity" />
+        <activity android:name=".SummaryActivity" />
 
-        <!--  修复相机闪退：FileProvider 配置 -->
         <provider
             android:name="androidx.core.content.FileProvider"
-            android:authorities="com.example.NoteMind.fileprovider"
+            android:authorities="${applicationId}.fileprovider"
             android:exported="false"
             android:grantUriPermissions="true">
             <meta-data
