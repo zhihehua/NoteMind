@@ -1,0 +1,2 @@
+# NoteMind
+personal
