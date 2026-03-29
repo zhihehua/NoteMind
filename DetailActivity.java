@@ -4,14 +4,13 @@ import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
-import android.util.Log;
-import android.view.ViewGroup;
+import android.view.View;
 import android.widget.EditText;
 import android.widget.GridLayout;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
@@ -29,10 +28,11 @@ public class DetailActivity extends AppCompatActivity {
 
     private EditText et_question, et_answer, et_tag, et_category, et_user_note;
     private GridLayout gl_photos;
+    private ImageButton btn_photo_note, btn_gallery_note;
     private QuestionDao dao;
     private int currentId = -1;
     private ArrayList<String> photoPathList = new ArrayList<>();
-    private String currentPhotoPath; // 拍照的临时路径
+    private String currentPhotoPath;
 
     private static final int REQUEST_CAMERA = 100;
     private static final int REQUEST_GALLERY = 101;
@@ -43,7 +43,6 @@ public class DetailActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_detail);
 
-        // 如果系统回收了 Activity，尝试恢复之前存下的路径
         if (savedInstanceState != null) {
             currentPhotoPath = savedInstanceState.getString("temp_path");
         }
@@ -55,24 +54,26 @@ public class DetailActivity extends AppCompatActivity {
         et_user_note = findViewById(R.id.et_user_note);
         gl_photos = findViewById(R.id.gl_photos);
 
+        btn_photo_note = findViewById(R.id.btn_photo_note);
+        btn_gallery_note = findViewById(R.id.btn_gallery_note);
+
         dao = new QuestionDao(this);
 
-        findViewById(R.id.btn_photo_note).setOnClickListener(v -> takePhoto());
-        findViewById(R.id.btn_gallery_note).setOnClickListener(v -> openGallery());
+        btn_photo_note.setOnClickListener(v -> takePhoto());
+        btn_gallery_note.setOnClickListener(v -> openGallery());
+
         findViewById(R.id.btn_update).setOnClickListener(v -> updateNote());
         findViewById(R.id.btn_delete).setOnClickListener(v -> deleteNote());
 
         loadData();
     }
 
-    // 重要：防止拍照时内存不足导致路径变量被销毁
     @Override
     protected void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
         outState.putString("temp_path", currentPhotoPath);
     }
 
-    // ====================== 拍照逻辑优化 ======================
     private void takePhoto() {
         if (checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(new String[]{Manifest.permission.CAMERA}, PERMISSION_REQUEST_CODE);
@@ -89,7 +90,6 @@ public class DetailActivity extends AppCompatActivity {
             }
 
             if (photoFile != null) {
-                // 注意：这里必须和 AndroidManifest.xml 里的 authorities 一致
                 Uri photoUri = FileProvider.getUriForFile(this,
                         "com.example.NoteMind.fileprovider", photoFile);
                 cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoUri);
@@ -103,11 +103,10 @@ public class DetailActivity extends AppCompatActivity {
         String imageFileName = "JPEG_" + timeStamp + "_";
         File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
         File image = File.createTempFile(imageFileName, ".jpg", storageDir);
-        currentPhotoPath = image.getAbsolutePath(); // 锁定路径
+        currentPhotoPath = image.getAbsolutePath();
         return image;
     }
 
-    // ====================== 相册逻辑 ======================
     private void openGallery() {
         Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
         startActivityForResult(intent, REQUEST_GALLERY);
@@ -119,13 +118,11 @@ public class DetailActivity extends AppCompatActivity {
 
         if (resultCode == RESULT_OK) {
             if (requestCode == REQUEST_CAMERA) {
-                // 相机拍照：data 通常为 null，直接使用我们存好的 currentPhotoPath
                 if (currentPhotoPath != null) {
                     photoPathList.add(currentPhotoPath);
                     addImageToView(currentPhotoPath);
                 }
             } else if (requestCode == REQUEST_GALLERY && data != null) {
-                // 相册选择
                 Uri uri = data.getData();
                 String path = getImagePathFromUri(uri);
                 if (path != null) {
@@ -151,7 +148,6 @@ public class DetailActivity extends AppCompatActivity {
 
     private void addImageToView(String path) {
         ImageView iv = new ImageView(this);
-        // 设置大小，防止图片过多撑爆内存
         GridLayout.LayoutParams params = new GridLayout.LayoutParams();
         params.width = 240;
         params.height = 240;
@@ -159,7 +155,6 @@ public class DetailActivity extends AppCompatActivity {
         iv.setLayoutParams(params);
         iv.setScaleType(ImageView.ScaleType.CENTER_CROP);
 
-        // 简单展示，卸载重装后数据库和文件路径已经匹配
         iv.setImageURI(Uri.fromFile(new File(path)));
 
         iv.setOnClickListener(v -> {
@@ -184,7 +179,6 @@ public class DetailActivity extends AppCompatActivity {
         gl_photos.addView(iv);
     }
 
-    // ====================== 数据持久化 ======================
     private void loadData() {
         currentId = getIntent().getIntExtra("id", -1);
         if (currentId == -1) return;
@@ -221,8 +215,9 @@ public class DetailActivity extends AppCompatActivity {
         for (String s : photoPathList) sb.append(s).append(";");
         String photoPaths = sb.length() > 0 ? sb.substring(0, sb.length() - 1) : "";
 
-        // 这里的 0 对应 knowledgeId，暂时保留
-        QuestionNote note = new QuestionNote(currentId, question, answer, tag, userNote, category, 0, photoPaths, "");
+        // 【核心修复点】：将构造函数参数从 9 个改为 8 个，删掉最后的 ""
+        QuestionNote note = new QuestionNote(currentId, question, answer, tag, userNote, category, 0, photoPaths);
+
         dao.updateNote(note);
         Toast.makeText(this, "修改已保存", Toast.LENGTH_SHORT).show();
         finish();

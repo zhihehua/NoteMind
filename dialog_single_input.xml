@@ -42,7 +42,7 @@
             android:layout_height="48dp"
             android:layout_marginStart="12dp"
             android:backgroundTint="#009688"
-            android:text="发送给AI"
+            android:text="发送给智记"
             android:textColor="#fff"/>
 
     </LinearLayout>

@@ -51,20 +51,37 @@ public class CameraUtils {
 
         try {
             if (requestCode == REQUEST_CAMERA) {
-                // 拍照返回
+                // 拍照返回（缩略图）
                 android.graphics.Bitmap bitmap = (android.graphics.Bitmap) data.getExtras().get("data");
                 if (listener != null) listener.onCameraSuccess(bitmap);
 
             } else if (requestCode == REQUEST_GALLERY) {
                 // 相册返回
-                android.graphics.Bitmap bitmap = MediaStore.Images.Media.getBitmap(activity.getContentResolver(), data.getData());
-                if (listener != null) listener.onGallerySuccess(bitmap);
+                android.net.Uri uri = data.getData();
+                if (uri == null) return;
+
+                android.graphics.Bitmap bitmap = null;
+                // 适配 Android 28 (9.0) 及以上版本
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                    android.graphics.ImageDecoder.Source source =
+                            android.graphics.ImageDecoder.createSource(activity.getContentResolver(), uri);
+                    bitmap = android.graphics.ImageDecoder.decodeBitmap(source, (decoder, info, src) -> {
+                        decoder.setMutableRequired(true); // 设置为可修改，防止某些滤镜报错
+                    });
+                } else {
+                    // 兼容旧版本
+                    bitmap = android.provider.MediaStore.Images.Media.getBitmap(activity.getContentResolver(), uri);
+                }
+
+                if (listener != null && bitmap != null) {
+                    listener.onGallerySuccess(bitmap);
+                }
             }
         } catch (Exception e) {
-            if (listener != null) listener.onFail(e.getMessage());
+            e.printStackTrace(); // 打印日志方便调试
+            if (listener != null) listener.onFail("图片解析失败: " + e.getMessage());
         }
     }
-
     // 回调接口
     public interface OnCameraResultListener {
         void onCameraSuccess(android.graphics.Bitmap bitmap);

@@ -10,7 +10,7 @@
         android:id="@+id/tv_summary_title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="AI 知识复盘"
+        android:text="个性化总结"
         android:textColor="#FFFFFF"
         android:textSize="22sp"
         android:textStyle="bold"
@@ -28,7 +28,7 @@
             android:id="@+id/tv_ai_content"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="正在调动原子算力，请稍候..."
+            android:text="正在调用用户数据，生成报告中,请稍候..."
             android:textColor="#E0E0E0"
             android:textSize="16sp"
             android:lineSpacingExtra="6dp" />
@@ -36,11 +36,11 @@
 
     <Button
         android:id="@+id/btn_re_summary"
-        android:layout_width="match_parent"
+        android:layout_width="334dp"
         android:layout_height="55dp"
         android:layout_marginTop="20dp"
         android:background="@drawable/btn_dark_gradient"
-        android:text="重新深度解析"
+        android:text="重新生成"
         android:textColor="#FFFFFF" />
 
 </LinearLayout>

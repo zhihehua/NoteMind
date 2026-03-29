@@ -26,6 +26,6 @@
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
         android:layout_marginBottom="30dp"
-        android:text="返回大脑"
-        android:backgroundTint="#333333"/>
+        android:text="返回首页"
+        android:background="@drawable/btn_atom_graph"/>
 </RelativeLayout>

@@ -14,13 +14,16 @@ import android.os.Bundle;
 import android.util.Base64;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.webkit.WebView; // 导入 WebView 用于调试和加速
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton; // 新增 ImageButton 导入
+import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -35,14 +38,20 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
-    private Button btnTakePhoto, btnGallery, btnInputText, btnShowList, btnKnowledgeAtom;
+    // 修改：底部三段式使用 ImageButton 适配 SVG
+    private ImageButton btnRecognizeMain, btnKnowledgeAtom, btnShowList;
+
+    // 弹出菜单内部依然使用 Button 或保持原样
+    private Button btnTakePhoto, btnGallery, btnInputText;
+    private LinearLayout llRecognizeMenu;
+    private boolean isMenuExpanded = false;
+
     private ChipGroup chipGroupTags;
     private String currentSelectedTag = "";
 
     private CameraUtils cameraUtils;
     private QuestionDao questionDao;
 
-    // 注意：请确保你的 API_KEY 已经正确填写
     private static final String API_KEY = "你的API_KEY";
     private static final String API_URL = "https://hello-occejwojlb.cn-hangzhou.fcapp.run";
     private static final String MODEL = "doubao-seed-1-8-251228";
@@ -55,7 +64,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // --- 核心修复：全局开启硬件加速 (解决原子不动的问题) ---
+        // 开启硬件加速
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
             getWindow().setFlags(
                     android.view.WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
@@ -66,21 +75,55 @@ public class MainActivity extends AppCompatActivity {
         questionDao = new QuestionDao(this);
         cameraUtils = new CameraUtils(this);
 
+        // --- 1. 绑定底部三段式核心 ImageButton ---
+        btnRecognizeMain = findViewById(R.id.btn_recognize_main); // 对应 ic_list
+        btnKnowledgeAtom = findViewById(R.id.btn_knowledge_atom); // 对应 ic_atom
+        btnShowList = findViewById(R.id.btn_show_list);           // 对应 it_my
+
+        // --- 2. 绑定弹出菜单及其子功能 ---
+        llRecognizeMenu = findViewById(R.id.ll_recognize_menu);
         btnTakePhoto = findViewById(R.id.btn_take_photo);
         btnGallery = findViewById(R.id.btn_gallery);
         btnInputText = findViewById(R.id.btn_input_text);
-        btnShowList = findViewById(R.id.btn_show_list);
-        btnKnowledgeAtom = findViewById(R.id.btn_knowledge_atom);
+
         chipGroupTags = findViewById(R.id.chip_group_tags);
 
         checkPermissions();
         refreshTagChips();
 
-        btnTakePhoto.setOnClickListener(v -> cameraUtils.openCamera());
-        btnGallery.setOnClickListener(v -> cameraUtils.openGallery());
-        btnInputText.setOnClickListener(v -> showInputTextDialog());
-        btnShowList.setOnClickListener(v -> startActivity(new Intent(this, NoteListActivity.class)));
-        btnKnowledgeAtom.setOnClickListener(v -> showAtomTagDialog());
+        // --- 3. 核心交互逻辑：三段式点击 ---
+
+        // 左侧：识别列表图标 (点击切换菜单)
+        btnRecognizeMain.setOnClickListener(v -> toggleRecognizeMenu());
+
+        // 中间：原子智图
+        btnKnowledgeAtom.setOnClickListener(v -> {
+            closeMenu();
+            showAtomTagDialog();
+        });
+
+        // 右侧：我的/展示列表
+        btnShowList.setOnClickListener(v -> {
+            closeMenu();
+            startActivity(new Intent(this, NoteListActivity.class));
+        });
+
+        // --- 4. 弹出菜单子项功能 ---
+
+        btnTakePhoto.setOnClickListener(v -> {
+            closeMenu();
+            cameraUtils.openCamera();
+        });
+
+        btnGallery.setOnClickListener(v -> {
+            closeMenu();
+            cameraUtils.openGallery();
+        });
+
+        btnInputText.setOnClickListener(v -> {
+            closeMenu();
+            showInputTextDialog();
+        });
 
         cameraUtils.setOnCameraResultListener(new CameraUtils.OnCameraResultListener() {
             @Override
@@ -94,67 +137,116 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * 切换识别菜单的显示状态（带优雅动画）
+     */
+    private void toggleRecognizeMenu() {
+        if (!isMenuExpanded) {
+            llRecognizeMenu.setVisibility(View.VISIBLE);
+            llRecognizeMenu.setAlpha(0f);
+            llRecognizeMenu.setTranslationY(20f); // 从下方浮现
+            llRecognizeMenu.animate()
+                    .alpha(1f)
+                    .translationY(0f)
+                    .setDuration(250)
+                    .start();
+        } else {
+            closeMenu();
+        }
+        isMenuExpanded = !isMenuExpanded;
+    }
+
+    /**
+     * 强制收起菜单
+     */
+    private void closeMenu() {
+        if (llRecognizeMenu.getVisibility() == View.VISIBLE) {
+            llRecognizeMenu.animate()
+                    .alpha(0f)
+                    .translationY(20f)
+                    .setDuration(200)
+                    .withEndAction(() -> llRecognizeMenu.setVisibility(View.GONE))
+                    .start();
+            isMenuExpanded = false;
+        }
+    }
+
     private void refreshTagChips() {
         if (chipGroupTags == null) return;
         chipGroupTags.removeAllViews();
 
-        // 1. 添加“+ 新标签”按钮
         Chip addBtn = new Chip(this);
         addBtn.setText("+ 新标签");
+        addBtn.setTextSize(15f); // 调大字体，增强突出感
         addBtn.setChipIcon(ContextCompat.getDrawable(this, android.R.drawable.ic_input_add));
-        addBtn.setCheckable(false); // 明确不可选中
+        addBtn.setCheckable(false);
         addBtn.setOnClickListener(v -> showNewTagInput());
         chipGroupTags.addView(addBtn);
 
-        // 2. 从数据库调取已有标签
         List<String> tags = questionDao.getAllUniqueTags();
         for (String tag : tags) {
             Chip chip = new Chip(this);
             chip.setText(tag);
+            chip.setTextSize(15f); // 调大字体
             chip.setCheckable(true);
-            // 恢复之前选中的状态
             if (tag.equals(currentSelectedTag)) {
                 chip.setChecked(true);
             }
             chip.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                if (isChecked) {
-                    currentSelectedTag = tag;
-                    // 单选逻辑：如果选中了这一个，确保其他的不被选中（可选）
-                } else if (currentSelectedTag.equals(tag)) {
-                    currentSelectedTag = "";
-                }
+                if (isChecked) currentSelectedTag = tag;
+                else if (currentSelectedTag.equals(tag)) currentSelectedTag = "";
             });
             chipGroupTags.addView(chip);
         }
     }
 
+    // --- 后续 AI 识别与弹窗逻辑保持不变 ---
+
     private void showNewTagInput() {
-        EditText et = new EditText(this);
-        et.setHint("如：线性代数、美食...");
-        new AlertDialog.Builder(this)
-                .setTitle("定义新场景")
-                .setView(et)
-                .setPositiveButton("选定", (d, w) -> {
-                    String val = et.getText().toString().trim();
-                    if(!val.isEmpty()) {
-                        currentSelectedTag = val;
-                        // 刷新列表以显示新标签并默认选中
-                        refreshTagChips();
-                        Toast.makeText(this, "当前场景：" + val, Toast.LENGTH_SHORT).show();
-                    }
-                })
-                .setNegativeButton("取消", null)
-                .show();
+        View v = LayoutInflater.from(this).inflate(R.layout.layout_custom_dialog, null);
+        TextView tvTitle = v.findViewById(R.id.dialog_title);
+        EditText etInput = v.findViewById(R.id.dialog_input);
+        Button btnConfirm = v.findViewById(R.id.dialog_btn_confirm);
+
+        tvTitle.setText("定义新场景: (如：高数、菜谱)");
+        etInput.setHint("");
+        etInput.setBackgroundResource(R.drawable.edittext_bg);
+
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
+                .setView(v)
+                .setCancelable(true)
+                .create();
+
+        dialog.show();
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+            dialog.getWindow().getDecorView().setPadding(0, 0, 0, 0);
+        }
+
+        btnConfirm.setBackgroundResource(R.drawable.btn_bg);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            btnConfirm.setBackgroundTintList(null);
+        }
+
+        btnConfirm.setOnClickListener(view -> {
+            String val = etInput.getText().toString().trim();
+            if(!val.isEmpty()) {
+                currentSelectedTag = val;
+                refreshTagChips();
+                dialog.dismiss();
+            }
+        });
     }
 
     private void showAtomTagDialog() {
         List<String> tags = questionDao.getAllUniqueTags();
         if (tags.isEmpty()) {
-            Toast.makeText(this, "暂无数据，无法生成原子图谱", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "暂无数据", Toast.LENGTH_SHORT).show();
             return;
         }
         String[] tagArray = tags.toArray(new String[0]);
-        new AlertDialog.Builder(this)
+        new MaterialAlertDialogBuilder(this)
                 .setTitle("选择要探索的原子领域")
                 .setItems(tagArray, (dialog, which) -> {
                     Intent intent = new Intent(this, AtomGraphActivity.class);
@@ -164,29 +256,47 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showInputTextDialog() {
-        View v = LayoutInflater.from(this).inflate(R.layout.dialog_single_input, null);
-        EditText et = v.findViewById(R.id.et_single_question);
+        View v = LayoutInflater.from(this).inflate(R.layout.layout_custom_dialog, null);
+        TextView tvTitle = v.findViewById(R.id.dialog_title);
+        EditText etInput = v.findViewById(R.id.dialog_input);
+        Button btnConfirm = v.findViewById(R.id.dialog_btn_confirm);
 
+        String label = "智能问答: (请在此输入问题)";
         if(!currentSelectedTag.isEmpty()) {
-            et.setHint("针对 [" + currentSelectedTag + "] 提问...");
+            label = "智能问答: (针对 [" + currentSelectedTag + "] 提问)";
+        }
+        tvTitle.setText(label);
+        etInput.setHint("");
+        etInput.setBackgroundResource(R.drawable.edittext_bg);
+
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
+                .setView(v)
+                .setCancelable(true)
+                .create();
+
+        dialog.show();
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+            dialog.getWindow().getDecorView().setPadding(0, 0, 0, 0);
         }
 
-        AlertDialog dialog = new AlertDialog.Builder(this).setView(v).create();
-        v.findViewById(R.id.btn_cancel_single).setOnClickListener(view -> dialog.dismiss());
-        v.findViewById(R.id.btn_send_ai).setOnClickListener(view -> {
-            String text = et.getText().toString().trim();
+        btnConfirm.setBackgroundResource(R.drawable.btn_bg);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            btnConfirm.setBackgroundTintList(null);
+        }
+
+        btnConfirm.setOnClickListener(view -> {
+            String text = etInput.getText().toString().trim();
             if (!text.isEmpty()) {
                 dialog.dismiss();
-                // 包装标签逻辑：确保 AI 知道上下文
                 String wrappedPrompt = currentSelectedTag.isEmpty() ? text :
                         "【场景标签：" + currentSelectedTag + "】用户问题：" + text;
                 requestAiText(wrappedPrompt);
             }
         });
-        dialog.show();
     }
 
-    // --- 识别核心逻辑 ---
     private void requestAiOcr(Bitmap bitmap) {
         showLoading();
         new Thread(() -> {
@@ -195,33 +305,25 @@ public class MainActivity extends AppCompatActivity {
                 JSONObject json = new JSONObject();
                 json.put("model", MODEL);
                 JSONArray messages = new JSONArray();
-
                 messages.put(new JSONObject().put("role", "system")
-                        .put("content", "你是一个知识助手。请按格式输出：题目：xxx解答：xxx。禁止包含Markdown代码块或多余解释。"));
-
+                        .put("content", "你是一个知识助手。请按格式输出,并且不能有转化符号,纯文本输出：题目：xxx解答：xxx。"));
                 JSONObject msg = new JSONObject();
                 msg.put("role", "user");
                 JSONArray contentArr = new JSONArray();
-
                 JSONObject textObj = new JSONObject();
                 textObj.put("type", "text");
                 textObj.put("text", currentSelectedTag.isEmpty() ? "识别图片中的题目并解答。" :
                         "【场景：" + currentSelectedTag + "】请分析图片中的知识点并解答。");
-
                 contentArr.put(textObj);
                 JSONObject imgObj = new JSONObject();
                 imgObj.put("type", "image_url");
                 imgObj.put("image_url", new JSONObject().put("url", "data:image/jpeg;base64," + base64));
                 contentArr.put(imgObj);
-
                 msg.put("content", contentArr);
                 messages.put(msg);
                 json.put("messages", messages);
-
                 callApi(json.toString());
-            } catch (Exception e) {
-                handleError(e.getMessage());
-            }
+            } catch (Exception e) { handleError(e.getMessage()); }
         }).start();
     }
 
@@ -234,13 +336,10 @@ public class MainActivity extends AppCompatActivity {
                 JSONArray messages = new JSONArray();
                 messages.put(new JSONObject().put("role", "system")
                         .put("content", "你是一个知识助手。请按格式输出：题目：xxx解答：xxx。"));
-
                 messages.put(new JSONObject().put("role", "user").put("content", text));
                 json.put("messages", messages);
                 callApi(json.toString());
-            } catch (Exception e) {
-                handleError(e.getMessage());
-            }
+            } catch (Exception e) { handleError(e.getMessage()); }
         }).start();
     }
 
@@ -252,43 +351,24 @@ public class MainActivity extends AppCompatActivity {
             conn.setRequestProperty("Content-Type", "application/json");
             conn.setRequestProperty("Authorization", "Bearer " + API_KEY);
             conn.setDoOutput(true);
-            conn.setConnectTimeout(20000);
-
-            try (OutputStream os = conn.getOutputStream()) {
-                os.write(body.getBytes());
-            }
-
+            try (OutputStream os = conn.getOutputStream()) { os.write(body.getBytes()); }
             BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
             StringBuilder sb = new StringBuilder();
             String line;
             while ((line = br.readLine()) != null) sb.append(line);
-
             JSONObject res = new JSONObject(sb.toString());
-            String fullText = "";
-            if (res.has("choices")) {
-                fullText = res.getJSONArray("choices").getJSONObject(0)
-                        .getJSONObject("message").getString("content");
-            }
-
-            if (fullText.isEmpty()) throw new Exception("AI 未能生成内容");
-
-            // 清洗 Markdown 代码块符号
+            String fullText = res.getJSONArray("choices").getJSONObject(0)
+                    .getJSONObject("message").getString("content");
             String cleanText = fullText.replaceAll("```[a-zA-Z]*", "").replace("```", "").trim();
-
-            String finalQ = "智能识别";
-            String finalA = cleanText;
-
+            String finalQ = "智能识别", finalA = cleanText;
             if (cleanText.contains("题目：") && cleanText.contains("解答：")) {
-                int qIdx = cleanText.indexOf("题目：") + 3;
-                int aIdx = cleanText.indexOf("解答：");
+                int qIdx = cleanText.indexOf("题目：") + 3, aIdx = cleanText.indexOf("解答：");
                 if (qIdx < aIdx) {
                     finalQ = cleanText.substring(qIdx, aIdx).trim();
                     finalA = cleanText.substring(aIdx + 3).trim();
                 }
             }
-
-            final String fQ = finalQ;
-            final String fA = finalA;
+            final String fQ = finalQ, fA = finalA;
             runOnUiThread(() -> {
                 if (loadingDialog != null) loadingDialog.dismiss();
                 Intent intent = new Intent(this, ConfirmActivity.class);
@@ -297,28 +377,39 @@ public class MainActivity extends AppCompatActivity {
                 intent.putExtra("selected_tag", currentSelectedTag);
                 startActivity(intent);
             });
-
-        } catch (Exception e) {
-            handleError(e.getMessage());
-        }
+        } catch (Exception e) { handleError(e.getMessage()); }
     }
 
     private void handleError(String msg) {
         runOnUiThread(() -> {
             if (loadingDialog != null) loadingDialog.dismiss();
-            Toast.makeText(MainActivity.this, "识别出错: " + msg, Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "识别出错: " + msg, Toast.LENGTH_LONG).show();
         });
     }
 
     private void checkPermissions() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return;
-        String[] permissions = {Manifest.permission.CAMERA, Manifest.permission.READ_EXTERNAL_STORAGE};
+
         List<String> list = new ArrayList<>();
-        for (String p : permissions) {
-            if (ContextCompat.checkSelfPermission(this, p) != PackageManager.PERMISSION_GRANTED) {
-                list.add(p);
+
+        // 1. 相机权限
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            list.add(Manifest.permission.CAMERA);
+        }
+
+        // 2. 存储/图片权限解析
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            // Android 13 (API 33) 及以上，必须申请 READ_MEDIA_IMAGES
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_IMAGES) != PackageManager.PERMISSION_GRANTED) {
+                list.add(Manifest.permission.READ_MEDIA_IMAGES);
+            }
+        } else {
+            // Android 12 及以下，使用旧权限
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                list.add(Manifest.permission.READ_EXTERNAL_STORAGE);
             }
         }
+
         if (!list.isEmpty()) {
             ActivityCompat.requestPermissions(this, list.toArray(new String[0]), ALL_PERMISSION_CODE);
         }
@@ -327,8 +418,15 @@ public class MainActivity extends AppCompatActivity {
     private void showLoading() {
         runOnUiThread(() -> {
             View v = LayoutInflater.from(this).inflate(R.layout.dialog_loading, null);
-            loadingDialog = new AlertDialog.Builder(this).setView(v).setCancelable(false).create();
+            loadingDialog = new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                    .setView(v)
+                    .setCancelable(false)
+                    .create();
             loadingDialog.show();
+            if (loadingDialog.getWindow() != null) {
+                loadingDialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+                loadingDialog.getWindow().getDecorView().setPadding(0, 0, 0, 0);
+            }
         });
     }
 
@@ -339,20 +437,12 @@ public class MainActivity extends AppCompatActivity {
         return Base64.encodeToString(baos.toByteArray(), Base64.NO_WRAP);
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        refreshTagChips();
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+    @Override protected void onResume() { super.onResume(); refreshTagChips(); }
+    @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         cameraUtils.onActivityResult(requestCode, resultCode, data);
     }
-
-    @Override
-    protected void onDestroy() {
+    @Override protected void onDestroy() {
         super.onDestroy();
         if (questionDao != null) questionDao.close();
     }

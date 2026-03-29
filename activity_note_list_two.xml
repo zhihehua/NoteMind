@@ -15,7 +15,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
-            android:text="笔记复盘"
+            android:text="我的智记->标签"
             android:textStyle="bold"
             android:textSize="18sp" />
         <TextView
